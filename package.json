@@ -1,0 +1,17 @@
+{
+  "name": "appliance-repair-lr3",
+  "version": "0.3.0",
+  "private": true,
+  "description": "ЛР3. Базовая структура системы управления сервисом по ремонту бытовой техники и GraphQL API",
+  "type": "commonjs",
+  "main": "src/gateway/server.js",
+  "scripts": {
+    "seed": "node src/seed/seed.js",
+    "start": "node src/gateway/server.js",
+    "demo": "node scripts/demo-queries.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.2.0",
+    "graphql": "^16.9.0"
+  }
+}
