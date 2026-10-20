@@ -1,0 +1,299 @@
+# Внешний GraphQL-контракт системы (ЛР2, раздел 4).
+# Реализованы все Query (ЛР3). Mutation объявлены как контракт и будут реализованы в ЛР4.
+
+type User {
+  id: ID!
+  login: String!
+  status: String!
+  role: String!
+  createdAt: String!
+}
+
+type Employee {
+  id: ID!
+  userId: ID!
+  position: String!
+  specialization: String
+}
+
+type Client {
+  id: ID!
+  userId: ID!
+  fullName: String!
+  phone: String!
+  email: String!
+  createdAt: String!
+}
+
+type DeviceCategory {
+  id: ID!
+  name: String!
+  isActive: Boolean!
+}
+
+type Device {
+  id: ID!
+  clientId: ID!
+  categoryId: ID!
+  model: String!
+  serialNumber: String
+  note: String
+  createdAt: String!
+  updatedAt: String!
+  # Связанные данные (агрегация на шлюзе)
+  category: DeviceCategory
+  client: Client
+}
+
+type WorkOrderServiceItem {
+  id: ID!
+  workOrderId: ID!
+  serviceId: ID!
+  serviceName: String!
+  quantity: Int!
+  unitPrice: Float!
+  lineTotal: Float!
+}
+
+type WorkOrderPartItem {
+  id: ID!
+  workOrderId: ID!
+  partId: ID!
+  partSku: String!
+  partName: String!
+  quantity: Int!
+  unitPrice: Float!
+  lineTotal: Float!
+}
+
+type WorkOrder {
+  id: ID!
+  requestId: ID!
+  employeeId: ID
+  status: String!
+  totalAmount: Float!
+  paymentReceived: Boolean!
+  createdAt: String!
+  updatedAt: String!
+  # Связанные данные (агрегация на шлюзе)
+  serviceItems: [WorkOrderServiceItem!]!
+  partItems: [WorkOrderPartItem!]!
+  payments: [Payment!]!
+}
+
+type RepairRequest {
+  id: ID!
+  clientId: ID!
+  deviceId: ID!
+  categoryId: ID!
+  categoryName: String!
+  deviceModel: String!
+  description: String!
+  priority: String!
+  status: String!
+  createdAt: String!
+  updatedAt: String!
+  # Связанные данные (агрегация на шлюзе)
+  workOrder: WorkOrder
+  notifications: [Notification!]!
+}
+
+type CatalogService {
+  id: ID!
+  name: String!
+  price: Float!
+  isActive: Boolean!
+  updatedAt: String!
+}
+
+type SparePart {
+  id: ID!
+  sku: String!
+  name: String!
+  price: Float!
+  stockQty: Int!
+  isActive: Boolean!
+  updatedAt: String!
+}
+
+type Payment {
+  id: ID!
+  workOrderId: ID!
+  clientId: ID!
+  amount: Float!
+  method: String!
+  status: String!
+  createdAt: String!
+}
+
+type Notification {
+  id: ID!
+  clientId: ID!
+  requestId: ID
+  eventType: String!
+  title: String!
+  body: String!
+  deliveryStatus: String!
+  createdAt: String!
+  sentAt: String
+}
+
+type ServiceDemand {
+  serviceId: ID!
+  serviceName: String!
+  itemsCount: Int!
+  amountSum: Float!
+}
+
+type CategoryDemand {
+  categoryId: ID!
+  categoryName: String!
+  requestsCount: Int!
+}
+
+type AnalyticsSummary {
+  periodFrom: String!
+  periodTo: String!
+  requestsCreated: Int!
+  requestsReady: Int!
+  requestsClosed: Int!
+  requestsCancelled: Int!
+  openRepairs: Int!
+  revenue: Float!
+  paymentsCount: Int!
+  topServices: [ServiceDemand!]!
+  topCategories: [CategoryDemand!]!
+}
+
+type AuthPayload {
+  token: String!
+  user: User!
+}
+
+input RegisterUserInput {
+  login: String!
+  password: String!
+  fullName: String!
+  phone: String!
+  email: String!
+}
+
+input LoginInput {
+  login: String!
+  password: String!
+}
+
+input RegisterDeviceInput {
+  categoryId: ID!
+  model: String!
+  serialNumber: String
+  note: String
+}
+
+input UpdateDeviceInput {
+  model: String
+  serialNumber: String
+  note: String
+}
+
+input CreateRepairRequestInput {
+  deviceId: ID!
+  description: String!
+  priority: String!
+}
+
+input RepairQueueFilter {
+  status: String
+  categoryId: ID
+  from: String
+  to: String
+}
+
+enum RepairQueueSort {
+  CREATED_AT
+  PRIORITY
+  TOTAL_AMOUNT
+}
+
+input AddServiceItemInput {
+  workOrderId: ID!
+  serviceId: ID!
+  quantity: Int!
+}
+
+input AddPartItemInput {
+  workOrderId: ID!
+  partId: ID!
+  quantity: Int!
+}
+
+input RegisterPaymentInput {
+  workOrderId: ID!
+  amount: Float
+  method: String!
+}
+
+input UpsertServiceInput {
+  id: ID
+  name: String!
+  price: Float!
+  isActive: Boolean!
+}
+
+input UpsertPartInput {
+  id: ID
+  sku: String!
+  name: String!
+  price: Float!
+  stockQty: Int!
+  isActive: Boolean!
+}
+
+type Query {
+  # Identity
+  me: User
+  # Customer
+  myDevices: [Device!]!
+  device(id: ID!): Device
+  # Repair
+  myRepairRequests: [RepairRequest!]!
+  repairRequest(id: ID!): RepairRequest
+  repairQueue(filter: RepairQueueFilter, sort: RepairQueueSort): [RepairRequest!]!
+  workOrder(id: ID!): WorkOrder
+  # Catalog
+  catalogServices: [CatalogService!]!
+  catalogParts: [SparePart!]!
+  # Notification
+  myNotifications: [Notification!]!
+  # Analytics (администратор)
+  analyticsSummary(from: String!, to: String!): AnalyticsSummary
+}
+
+type Mutation {
+  # Identity
+  registerUser(input: RegisterUserInput!): AuthPayload!
+  login(input: LoginInput!): AuthPayload!
+  assignRole(userId: ID!, role: String!): User!
+  # Customer
+  registerDevice(input: RegisterDeviceInput!): Device!
+  updateDevice(id: ID!, input: UpdateDeviceInput!): Device!
+  # Repair
+  createRepairRequest(input: CreateRepairRequestInput!): RepairRequest!
+  acceptRepairRequest(id: ID!): RepairRequest!
+  markDeviceReceived(id: ID!): RepairRequest!
+  startDiagnosis(id: ID!): RepairRequest!
+  addWorkOrderService(input: AddServiceItemInput!): WorkOrder!
+  addWorkOrderPart(input: AddPartItemInput!): WorkOrder!
+  calculateWorkOrderTotal(id: ID!): WorkOrder!
+  approveRepairEstimate(id: ID!): RepairRequest!
+  rejectRepairEstimate(id: ID!): RepairRequest!
+  completeWorkOrder(id: ID!): WorkOrder!
+  markDeviceReady(id: ID!): RepairRequest!
+  closeRepairRequest(id: ID!): RepairRequest!
+  cancelRepairRequest(id: ID!): RepairRequest!
+  # Payment
+  registerPayment(input: RegisterPaymentInput!): Payment!
+  # Catalog (администратор)
+  upsertService(input: UpsertServiceInput!): CatalogService!
+  upsertPart(input: UpsertPartInput!): SparePart!
+}
